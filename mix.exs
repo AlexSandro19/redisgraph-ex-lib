@@ -11,7 +11,7 @@ defmodule RedisGraph.MixProject do
       version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
-      # test_coverage: [tool: CoverModule],
+      test_coverage: [tool: ExCoveralls],
       aliases: aliases(),
       deps: deps(),
       # hex
@@ -67,11 +67,11 @@ defmodule RedisGraph.MixProject do
 
       # dev
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.3", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
 
       # test
       {:excoveralls, "~> 0.16.1", only: :test},
-      {:credo, "~> 1.7"}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 end

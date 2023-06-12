@@ -144,7 +144,7 @@ defmodule RedisGraph.QueryResult do
   @doc "Return a boolean indicating emptiness of a QueryResult."
   @spec is_empty(t()) :: boolean()
   def is_empty(query_result) do
-    if is_nil(query_result.result_set) or length(query_result.result_set) == 0 do
+    if is_nil(query_result.result_set) or Enum.empty?(query_result.result_set) do
       true
     else
       false
@@ -164,7 +164,7 @@ defmodule RedisGraph.QueryResult do
       @relationships_deleted,
       @indices_created,
       @indices_deleted,
-      @query_internal_execution_time,
+      @query_internal_execution_time
     ]
 
     stats
@@ -204,7 +204,7 @@ defmodule RedisGraph.QueryResult do
 
   @spec parse_header(t()) :: list(atom())
   defp parse_header(%{raw_result_set: [header | _tail]} = _query_result) do
-    header |> Enum.map(fn h -> Enum.at(h, 1) |> String.to_atom end)
+    header |> Enum.map(fn h -> Enum.at(h, 1) |> String.to_atom() end)
   end
 
   @spec fetch_metadata(t()) :: t()
@@ -262,7 +262,7 @@ defmodule RedisGraph.QueryResult do
     # IO.inspect(query_result)
     # records = List.first(records_array)
     # IO.puts("parse_records > records")
-    records = Enum.map(records_array, &parse_row(query_result, &1))
+    Enum.map(records_array, &parse_row(query_result, &1))
     # IO.inspect(records)
   end
 
@@ -284,7 +284,8 @@ defmodule RedisGraph.QueryResult do
     # IO.inspect(properties)
     # IO.puts("parse_row > end")
 
-    cells = Enum.with_index(row) |> Enum.map(fn {cell, index} ->
+    Enum.with_index(row)
+    |> Enum.map(fn {cell, index} ->
       [column_type, alias] = header |> Enum.at(index)
       # IO.puts("column_type")
       # IO.inspect(column_type)
@@ -292,7 +293,8 @@ defmodule RedisGraph.QueryResult do
       # IO.inspect(column_type)
       parse_cell(query_result, cell, column_type, String.to_atom(alias))
     end)
-    #cells = Enum.map(row, fn cell -> parse_cell(query_result, cell) end)
+
+    # cells = Enum.map(row, fn cell -> parse_cell(query_result, cell) end)
     # IO.puts("parse_row > cells")
     # IO.inspect(cells)
   end
@@ -306,46 +308,44 @@ defmodule RedisGraph.QueryResult do
     # IO.inspect(cell)
     [value_type | [value]] = cell
 
-    res =
-      cond do
-        value_type == @value_type[:VALUE_NODE] ->
-          parse_node(query_result, value, alias)
+    cond do
+      value_type == @value_type[:VALUE_NODE] ->
+        parse_node(query_result, value, alias)
 
-        value_type == @value_type[:VALUE_EDGE] ->
-          parse_relationship(query_result, value, alias)
+      value_type == @value_type[:VALUE_EDGE] ->
+        parse_relationship(query_result, value, alias)
 
-        value_type == @value_type[:VALUE_NULL] || value_type == @value_type[:VALUE_INTEGER] ||
-            value_type == @value_type[:VALUE_STRING] ->
-          value
+      value_type == @value_type[:VALUE_NULL] || value_type == @value_type[:VALUE_INTEGER] ||
+          value_type == @value_type[:VALUE_STRING] ->
+        value
 
-        value_type == @value_type[:VALUE_BOOLEAN] ->
-          if(value == "true", do: true, else: false)
+      value_type == @value_type[:VALUE_BOOLEAN] ->
+        if(value == "true", do: true, else: false)
 
-        value_type == @value_type[:VALUE_DOUBLE] ->
-          String.to_float(value)
+      value_type == @value_type[:VALUE_DOUBLE] ->
+        String.to_float(value)
 
-        value_type == @value_type[:VALUE_ARRAY] ->
-          Enum.map(value, fn inner_value -> parse_cell(query_result, inner_value) end)
+      value_type == @value_type[:VALUE_ARRAY] ->
+        Enum.map(value, fn inner_value -> parse_cell(query_result, inner_value) end)
 
-        value_type == @value_type[:VALUE_PATH] ||
-          value_type == @value_type[:VALUE_MAP] || value_type == @value_type[:VALUE_POINT] ->
-          "will be implemented in future"
+      value_type == @value_type[:VALUE_PATH] ||
+        value_type == @value_type[:VALUE_MAP] || value_type == @value_type[:VALUE_POINT] ->
+        "will be implemented in future"
 
-        true ->
-          "unknown value type"
-      end
+      true ->
+        "unknown value type"
+    end
 
     # IO.puts("parse_cell > res")
     # IO.inspect(res)
   end
-
 
   # Unused, retained for client compatibility.
   defp parse_cell(query_result, cell, 2, alias) do
     parse_node(query_result, cell, alias)
   end
 
-   # Unused, retained for client compatibility.
+  # Unused, retained for client compatibility.
   defp parse_cell(query_result, cell, 3, alias) do
     parse_relationship(query_result, cell, alias)
   end
@@ -387,7 +387,7 @@ defmodule RedisGraph.QueryResult do
     Enum.map(label_indexes, fn label_id -> Map.get(query_result.labels, label_id) end)
   end
 
-  @spec parse_relationship_type(t(), list(number())) :: list()
+  @spec parse_relationship_type(t(), list(number())) :: String.t()
   defp parse_relationship_type(query_result, relationship_type_index) do
     Map.get(query_result.relationship_types, relationship_type_index)
   end
