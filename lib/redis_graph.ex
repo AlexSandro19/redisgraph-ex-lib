@@ -120,8 +120,6 @@ defmodule RedisGraph do
           {:ok, QueryResult.t()} | {:error, any()}
   def command(conn, c) do
     # Logger.debug(Enum.join(c, " "))
-    IO.puts("c")
-    IO.inspect(c)
 
     case Redix.command(conn, c) do
       {:ok, result} ->
