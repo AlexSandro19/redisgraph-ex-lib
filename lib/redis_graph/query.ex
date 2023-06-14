@@ -86,15 +86,15 @@ defmodule RedisGraph.Query do
   alias RedisGraph.{Node, Relationship, Util}
 
   @opaque t() :: %__MODULE__{
-          current_clause: clauses() | nil,
-          last_element: RedisGraph.Node.t() | RedisGraph.Relationship.t() | nil,
-          error: String.t() | nil,
-          nodes: %{atom() => RedisGraph.Node.t()},
-          relationships: %{atom() => RedisGraph.Relationship.t()},
-          variables: [String.t()],
-          used_clauses: [[atom()]] | [],
-          used_clauses_with_data: [[map()]] | []
-        }
+            current_clause: clauses() | nil,
+            last_element: RedisGraph.Node.t() | RedisGraph.Relationship.t() | nil,
+            error: String.t() | nil,
+            nodes: %{atom() => RedisGraph.Node.t()},
+            relationships: %{atom() => RedisGraph.Relationship.t()},
+            variables: [String.t()],
+            used_clauses: [[atom()]] | [],
+            used_clauses_with_data: [[map()]] | []
+          }
 
   @typep clauses() ::
            :create
@@ -2981,7 +2981,8 @@ defmodule RedisGraph.Query do
         set_clause_present? = Map.get(context, :used_clauses, []) |> Enum.member?(:set)
 
         inner_context =
-          if (return_clause_present? or return_distinct_clause_present? or delete_clause_present? or set_clause_present?) and filtered_size_enough? do
+          if (return_clause_present? or return_distinct_clause_present? or delete_clause_present? or
+                set_clause_present?) and filtered_size_enough? do
             context
           else
             Map.put(

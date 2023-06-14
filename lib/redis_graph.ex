@@ -122,6 +122,7 @@ defmodule RedisGraph do
     # Logger.debug(Enum.join(c, " "))
     IO.puts("c")
     IO.inspect(c)
+
     case Redix.command(conn, c) do
       {:ok, result} ->
         {:ok, QueryResult.new(%{conn: conn, graph_name: Enum.at(c, 1), raw_result_set: result})}
@@ -249,7 +250,8 @@ defmodule RedisGraph do
   {:ok, query_result} = RedisGraph.call_procedure_raw(conn, graph.name, "db.labels")
   ```
   """
-  @spec call_procedure_raw(connection(), String.t(), String.t(), list(), map()) :: {:ok, list()} | {:error, any()}
+  @spec call_procedure_raw(connection(), String.t(), String.t(), list(), map()) ::
+          {:ok, list()} | {:error, any()}
   def call_procedure_raw(conn, graph_name, procedure, args \\ [], kwargs \\ %{}) do
     args = Enum.map_join(args, ",", &Util.value_to_string/1)
 
@@ -296,7 +298,8 @@ defmodule RedisGraph do
   {:ok, query_result} = RedisGraph.call_procedure(conn, graph.name, "db.labels")
   ```
   """
-  @spec call_procedure(connection(), String.t(), String.t(), list(), map()) :: {:ok, QueryResult.t()} | {:error, any()}
+  @spec call_procedure(connection(), String.t(), String.t(), list(), map()) ::
+          {:ok, QueryResult.t()} | {:error, any()}
   def call_procedure(conn, graph_name, procedure, args \\ [], kwargs \\ %{}) do
     args = Enum.map_join(args, ",", &Util.value_to_string/1)
 

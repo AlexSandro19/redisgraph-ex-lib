@@ -206,8 +206,12 @@ defmodule RedisGraph.QueryResult do
   @spec fetch_metadata(t()) :: t()
   defp fetch_metadata(%{conn: conn, graph_name: name} = query_result) do
     labels = parse_procedure_call(RedisGraph.call_procedure_raw(conn, name, "db.labels"))
-    property_keys = parse_procedure_call(RedisGraph.call_procedure_raw(conn, name, "db.propertyKeys"))
-    relationship_types = parse_procedure_call(RedisGraph.call_procedure_raw(conn, name, "db.relationshipTypes"))
+
+    property_keys =
+      parse_procedure_call(RedisGraph.call_procedure_raw(conn, name, "db.propertyKeys"))
+
+    relationship_types =
+      parse_procedure_call(RedisGraph.call_procedure_raw(conn, name, "db.relationshipTypes"))
 
     %{
       query_result
@@ -235,8 +239,10 @@ defmodule RedisGraph.QueryResult do
   @spec parse_results(t()) :: t()
   defp parse_results(%{raw_result_set: [header | _tail]} = query_result) do
     query_result = fetch_metadata(query_result)
+
     if length(header) > 0 do
       header = parse_header(query_result)
+
       %{
         query_result
         | header: header,
@@ -255,10 +261,10 @@ defmodule RedisGraph.QueryResult do
   @spec parse_row(t(), list(any())) :: list(any())
   defp parse_row(%{raw_result_set: [header | _tail]} = query_result, row) do
     Stream.with_index(row)
-      |> Enum.map(fn {cell, index} ->
-        [column_type, alias] = header |> Enum.at(index)
-        parse_cell(query_result, cell, column_type, String.to_atom(alias))
-      end)
+    |> Enum.map(fn {cell, index} ->
+      [column_type, alias] = header |> Enum.at(index)
+      parse_cell(query_result, cell, column_type, String.to_atom(alias))
+    end)
   end
 
   # https://redis.io/docs/stack/graph/design/client_spec/
@@ -310,6 +316,7 @@ defmodule RedisGraph.QueryResult do
   @spec parse_node(t(), list(any()), atom()) :: Node.t()
   defp parse_node(query_result, cell, alias) do
     [node_id | [label_indexes | [properties]]] = cell
+
     Node.new(%{
       id: node_id,
       alias: alias,

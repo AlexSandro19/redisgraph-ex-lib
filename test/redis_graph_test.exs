@@ -139,18 +139,20 @@ defmodule RedisGraphTest do
   end
 
   describe "RedisGraph.command" do
-    test "test that QueryResult is being returned with correct data", %{conn: conn, graph: graph} = _context do
+    test "test that QueryResult is being returned with correct data",
+         %{conn: conn, graph: graph} = _context do
       query = [
-          "GRAPH.QUERY",
-          graph.name,
-          "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a",
-          "--compact"
-        ]
+        "GRAPH.QUERY",
+        graph.name,
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a",
+        "--compact"
+      ]
 
       {:ok, query_result} = RedisGraph.command(conn, query)
       %{result_set: result_set, header: header, statistics: statistics} = query_result
 
       correct_header = [:a]
+
       correct_result_set = [
         [
           %RedisGraph.Node{
@@ -170,29 +172,32 @@ defmodule RedisGraphTest do
       assert Map.get(statistics, "Nodes created") == "2"
       assert Map.get(statistics, "Properties set") == "2"
       assert Map.get(statistics, "Relationships created") == "1"
-
     end
 
     test "test that error is being returned", %{conn: conn, graph: graph} = _context do
       query = [
-          "GRAPH.QUERY",
-          graph.name,
-          "MATCH (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'})",
-          "--compact"
-        ]
+        "GRAPH.QUERY",
+        graph.name,
+        "MATCH (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'})",
+        "--compact"
+      ]
+
       {:error, error} = RedisGraph.command(conn, query)
       assert is_struct(error, Redix.Error)
     end
   end
 
   describe "RedisGraph.query" do
-    test "test that QueryResult is being returned with correct data", %{conn: conn, graph: graph} = _context do
-      query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+    test "test that QueryResult is being returned with correct data",
+         %{conn: conn, graph: graph} = _context do
+      query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
 
       {:ok, query_result} = RedisGraph.query(conn, graph.name, query)
       %{result_set: result_set, header: header, statistics: statistics} = query_result
 
       correct_header = [:a]
+
       correct_result_set = [
         [
           %RedisGraph.Node{
@@ -212,7 +217,6 @@ defmodule RedisGraphTest do
       assert Map.get(statistics, "Nodes created") == "2"
       assert Map.get(statistics, "Properties set") == "2"
       assert Map.get(statistics, "Relationships created") == "1"
-
     end
 
     test "test that error is being returned", %{conn: conn, graph: graph} = _context do
@@ -223,14 +227,20 @@ defmodule RedisGraphTest do
   end
 
   describe "RedisGraph.execution_plan" do
-    test "test that QueryResult is being returned with correct data", %{conn: conn, graph: graph} = _context do
-      create_query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+    test "test that QueryResult is being returned with correct data",
+         %{conn: conn, graph: graph} = _context do
+      create_query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, create_query)
 
-      match_query = "MATCH (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+      match_query =
+        "MATCH (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, query_result} = RedisGraph.execution_plan(conn, graph.name, match_query)
 
       response = query_result
+
       correct_response = [
         "Results",
         "    Project",
@@ -241,30 +251,38 @@ defmodule RedisGraphTest do
       ]
 
       assert response == correct_response
-
     end
 
     test "test that error is being returned", %{conn: conn, graph: graph} = _context do
-      create_query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+      create_query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, create_query)
 
       match_query = "MATCH (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'})"
       {:error, error} = RedisGraph.execution_plan(conn, graph.name, match_query)
       assert is_struct(error, Redix.Error)
-
     end
   end
 
   describe "RedisGraph.delete" do
-    test "test that QueryResult is being returned with correct data", %{conn: conn, graph: graph} = _context do
-      create_query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+    test "test that QueryResult is being returned with correct data",
+         %{conn: conn, graph: graph} = _context do
+      create_query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, create_query)
       {:ok, delete_result} = RedisGraph.delete(conn, graph.name)
-      assert is_binary(Map.get(delete_result.statistics, "Graph removed, internal execution time"))
+
+      assert is_binary(
+               Map.get(delete_result.statistics, "Graph removed, internal execution time")
+             )
     end
 
     test "test that error is being returned", %{conn: conn, graph: graph} = _context do
-      create_query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+      create_query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, create_query)
       {:error, error} = RedisGraph.delete(conn, "1234")
       assert is_struct(error, Redix.Error)
@@ -272,8 +290,10 @@ defmodule RedisGraphTest do
   end
 
   describe "RedisGraph.call_procedure" do
-    test "test that QueryResult is being returned with correct data", %{conn: conn, graph: graph} = _context do
-      query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+    test "test that QueryResult is being returned with correct data",
+         %{conn: conn, graph: graph} = _context do
+      query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
 
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, query)
 
@@ -288,7 +308,9 @@ defmodule RedisGraphTest do
     end
 
     test "test that error is being returned", %{conn: conn, graph: graph} = _context do
-      query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+      query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, query)
       {:error, error} = RedisGraph.call_procedure(conn, graph.name, "test")
       assert is_struct(error, Redix.Error)
@@ -296,20 +318,23 @@ defmodule RedisGraphTest do
   end
 
   describe "RedisGraph.call_procedure_raw" do
-    test "test that QueryResult is being returned with correct data", %{conn: conn, graph: graph} = _context do
-      query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+    test "test that QueryResult is being returned with correct data",
+         %{conn: conn, graph: graph} = _context do
+      query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, query)
       {:ok, response} = RedisGraph.call_procedure_raw(conn, graph.name, "db.labels")
       assert is_list(response)
-
     end
 
     test "test that error is being returned", %{conn: conn, graph: graph} = _context do
-      query = "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+      query =
+        "CREATE (a:actor {name: 'Hugh Jackman'})-[:act]->(m:movie {title:'Wolverine'}) RETURN a"
+
       {:ok, _query_result} = RedisGraph.query(conn, graph.name, query)
       {:error, error} = RedisGraph.call_procedure_raw(conn, graph.name, "test")
       assert is_struct(error, Redix.Error)
     end
   end
-
 end
