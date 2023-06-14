@@ -1822,7 +1822,7 @@ defmodule RedisGraph.QueryTest do
         |> Query.build_query()
 
       assert query ==
-               "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
+               "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT, SET or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
     end
   end
 
@@ -1943,7 +1943,7 @@ defmodule RedisGraph.QueryTest do
         |> Query.build_query()
 
       assert query ==
-               "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
+               "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT, SET or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
     end
 
     test "build query that would give error because as varible is not atom." do
@@ -2044,7 +2044,7 @@ defmodule RedisGraph.QueryTest do
         |> Query.build_query()
 
       assert query ==
-               "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
+               "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT, SET or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
     end
   end
 end
