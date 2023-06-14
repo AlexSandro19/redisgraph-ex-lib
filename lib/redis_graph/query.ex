@@ -1,20 +1,45 @@
 defmodule RedisGraph.Query do
   @moduledoc """
-  Query module provides functions to build the cypther query for RedisGraph database.
+  Query module provides functions to build the
+  cypther query for RedisGraph database.
 
-  The module exposes functions that represent entities (Node/Relationship)
-  and clauses (MATCH/WHERE/RETURN etc.) through which client can build
-  the desired query and pass it to RedisGraph.query/3 to interact with the database.
-  Internally Query structure holds the context, that contains data necessary when
-  building the actual query. The context shouldn't be altered by the client directly,
-  instead only public functions from this module should be, which would internally change it.
+  The module exposes functions that represent
+  entities (Node/Relationship) and [Cypher clauses]
+  (https://redis.io/docs/stack/graph/cypher_support/#clauses)
+  (MATCH/WHERE/RETURN etc.) through which client can build
+  the desired query and pass it to `RedisGraph.query/3` to
+  interact with the database. Query structure holds the context,
+  that contains data necessary when building the actual query.
+  The context shouldn't be altered by the client directly,
+  instead only public functions from this module should be,
+  which would internally change it.
 
-  The query supports the following clauses: `CREATE, MATCH, OPTIONAL MATCH,
-  MERGE, DELETE, SET, ON MATCH SET, ON CREATE SET, WITH, WHERE, ORDER BY,
-  LIMIT, SKIP, RETURN`.
+  The `RedisGraph.Query` supports the following Cypher clauses through functions:
+  - CREATE: `create/1`
+  - MATCH: `match/1`
+  - OPTIONALMATCH`: `optional_match/1`
+  - MERGE: `merge/1`
+  - DELETE: `delete/2`
+  - WHERE: `where/5`, `where_not/5`, `or_where/5`, `and_where/5`, `xor_where/5`, `or_not_where/5`, `and_not_where/5`, `xor_not_where/5`
+  - ORDERBY`: `order_by/3`
+  - SET: `set/4`, `set_property/5`
+  - ONMATCH SET`: `on_match_set/4`, `on_match_set_property/5`
+  - ONCREATE SET`: `on_create_set/4`, `on_create_set_property/5`
+  - WITH: `with/3`, `with_property/4`, `with_function/4`, `with_function_and_property/5`
+  - LIMIT: `limit/2`
+  - `SKIP`: `skip/2`
+  - `RETURN`: `return/3`, `return_property/4`, `return_function/4`, `return_function_and_property/5`
+  - `RETURN DISTINCT`: `return_distinct/3`, `return_distinct_property/4`, `return_distinct_function/4`, `return_distinct_function_and_property/5`
 
-  After building the query, you will end up with either `{:ok, query_message}`
-  or `{:error, error_message}`.
+  Node entity is supported through functions: `node/3`, `node/4`
+  Relatioshipentity is supported through functions: `relationship_from_to/3`, `relationship_from_to/4`, `relationship_to_from/3`, `relationship_to_from/4`
+
+  After building the query, you will end up with either `{:ok, query_message}` or `{:error, error_message}`.
+
+  The workflow of using the `RedisGraphQuery` module is the following:
+  - create anew query using `new/0`
+  - populate the query through `match/1`, `node/3`, `return/3` etc.
+  - receive the query string by building it through `build_query/1`
 
   ## Examples
   ```
@@ -60,18 +85,16 @@ defmodule RedisGraph.Query do
 
   alias RedisGraph.{Node, Relationship, Util}
 
-  # MATCH, WHERE, ORDER BY, RETURN, RETURN DISTINCT, LIMIT, SKIP
-
-  @type t() :: %__MODULE__{
-          current_clause: clauses() | nil,
-          last_element: RedisGraph.Node.t() | RedisGraph.Relationship.t() | nil,
-          error: String.t() | nil,
-          nodes: %{atom() => RedisGraph.Node.t()},
-          relationships: %{atom() => RedisGraph.Relationship.t()},
-          variables: [String.t()],
-          used_clauses: [[atom()]] | [],
-          used_clauses_with_data: [[map()]] | []
-        }
+  @opaque t() :: %__MODULE__{
+            current_clause: clauses() | nil,
+            last_element: RedisGraph.Node.t() | RedisGraph.Relationship.t() | nil,
+            error: String.t() | nil,
+            nodes: %{atom() => RedisGraph.Node.t()},
+            relationships: %{atom() => RedisGraph.Relationship.t()},
+            variables: [String.t()],
+            used_clauses: [[atom()]] | [],
+            used_clauses_with_data: [[map()]] | []
+          }
 
   @typep clauses() ::
            :create
@@ -156,14 +179,31 @@ defmodule RedisGraph.Query do
     used_clauses_with_data: []
   ]
 
+  @doc """
+  Used to initialize the `RedisGraph.Query` structure and create the query.
+  Funciton returns the query context, whose contents should be updated using
+  subsequent functions in this module (e.g. `match/1`, `return/3`) and not manipulated directly.
+
+  ## Example
+  ```
+  alias RedisGraph.{Query}
+
+  {:ok, query} = Query.new() |> Query.match() |> Query.node(:n) |> Query.return(:n) |> Query.build_query()
+  # query will hold
+  # "MATCH (n) RETURN n"
+  ```
+  """
+  @spec new() :: t()
   def new() do
     struct(__MODULE__)
   end
 
   @doc """
   Add `MATCH` clause into the context and receive the updated context.
-  After match/1 provide the entities which you want to match using
-  node(), relationship_from_to, relationship_to_from() functions.
+  Receives the context which is provided from `new/0` function.
+
+  After `match/1` provide the entities which you want to match using
+  `node/2`, `relationship_from_to/2`, `relationship_to_from/2` functions.
 
   ## Example
   ```
@@ -193,8 +233,10 @@ defmodule RedisGraph.Query do
 
   @doc """
   Add `OPTIONAL MATCH` clause into the context and receive the updated context.
-  After optional_match/1 provide the entities which you want to match using
-  node(), relationship_from_to, relationship_to_from() functions.
+  Receives the context which is provided from `new/0` function.
+
+  After `optional_match/1` provide the entities which you want to match using
+  `node/2`, `relationship_from_to/2`, `relationship_to_from/2` functions.
 
   ## Example
   ```
@@ -224,8 +266,10 @@ defmodule RedisGraph.Query do
 
   @doc """
   Add `MERGE` clause into the context and receive the updated context.
-  After merge/1 provide the entities which you want to match using
-  node(), relationship_from_to, relationship_to_from() functions.
+  Receives the context which is provided from `new/0` function.
+
+  After `merge/1` provide the entities which you want to match using
+  `node/2`, `relationship_from_to/2`, `relationship_to_from/2` functions.
 
   ## Example
   ```
@@ -255,8 +299,10 @@ defmodule RedisGraph.Query do
 
   @doc """
   Add `CREATE` clause into the context and receive the updated context.
-  After create/1 provide the entities which you want to match using
-  node(), relationship_from_to, relationship_to_from() functions.
+  Receives the context which is provided from `new/0` function.
+
+  After `create/1` provide the entities which you want to match using
+  `node/2`, `relationship_from_to`, `relationship_to_from/2` functions.
 
   ## Example
   ```
@@ -344,7 +390,7 @@ defmodule RedisGraph.Query do
 
   @doc """
   Add a Node to a clause and receive the updated context.
-  Provide the `context`, `alias` (as atom) of the node you want to add and a list of `labels` (as Strings) or a map of `properties`.
+  Provide the `context`, `alias` (as atom) of the node and `option` as a list of labels (as Strings) or a map of properties.
   The function can be used along with `MATCH, OPTIONAL MATCH, CREATE, MERGE` clauses.
 
   ## Example
@@ -369,14 +415,13 @@ defmodule RedisGraph.Query do
   # "MATCH or OPTIONAL MATCH or CREATE or MERGE clause has to be provided first before using node(). E.g. new() |> match() |> node(:n) |> ..."
   ```
   """
-  @spec node(t(), atom(), list(String.t())) :: t()
-  def node(%{error: nil} = context, alias, labels) when is_list(labels) do
-    node(context, alias, labels, %{})
+  @spec node(t(), atom(), list(String.t()) | map()) :: t()
+  def node(%{error: nil} = context, alias, option) when is_list(option) do
+    node(context, alias, option, %{})
   end
 
-  @spec node(t(), atom(), map()) :: t()
-  def node(%{error: nil} = context, alias, properties) when is_map(properties) do
-    node(context, alias, [], properties)
+  def node(%{error: nil} = context, alias, option) when is_map(option) do
+    node(context, alias, [], option)
   end
 
   @doc """
@@ -402,14 +447,13 @@ defmodule RedisGraph.Query do
   # "MATCH or OPTIONAL MATCH or CREATE or MERGE clause has to be provided first before using node(). E.g. new() |> match() |> node(:n) |> ..."
   ```
   """
-  @spec node(t(), atom(), list(String.t()), map()) :: t()
+  @spec node(t(), atom(), list(String.t()) | [], map()) :: t()
   def node(context, alias, labels \\ [], properties \\ %{})
 
   def node(%{error: nil} = context, alias, labels, properties)
       when is_list(labels) and is_map(properties) do
     node = RedisGraph.Node.new(%{alias: alias, labels: labels, properties: properties})
     last_element = Map.get(context, :last_element)
-
     context = check_if_provided_context_has_correct_structure(context)
     context = check_if_alias_is_atom(context, alias)
 
@@ -428,20 +472,6 @@ defmodule RedisGraph.Query do
       end
 
     context = check_if_match_or_create_or_merge_clause_provided(context, "node()", false)
-
-    # used_clauses_with_data = Map.get(context, :used_clauses_with_data, [])
-
-    # alias_present? = List.last(used_clauses_with_data, %{})|> Map.get(:elements, []) |> Stream.map(fn element -> alias == element end) |> Enum.member?(true)
-    # # alias_present? = Map.get(context, :relationships, %{}) |> Map.has_key?(alias) or Map.get(context, :nodes, %{}) |> Map.has_key?(alias)
-    # context = if(alias_present?) do
-    #   Map.put(
-    #     context,
-    #     :error,
-    #     "Provided alias: :#{alias} was alreay mentioned before. Pass the another alias: e.g. new() |> match() |> node(:n) |> node(:m) |> order_by_property(:n, \"age\") |> ..."
-    #   )
-    # else
-    #   context
-    # end
 
     error = Map.get(context, :error)
 
@@ -504,14 +534,10 @@ defmodule RedisGraph.Query do
     check_if_provided_context_has_correct_structure(context)
   end
 
-  @spec relationship_from_to(t(), atom(), String.t()) :: t()
-  def relationship_from_to(%{error: nil} = context, alias, type) when is_binary(type) do
-    relationship_from_to(context, alias, type, %{})
-  end
-
   @doc """
   Add a Relationship to a clause and receive the updated context.
-  Provide the `context`, `alias` (as atom) of the relationship you want to add and a `type` (as Strings) or a map of `properties`.
+  Provide the `context`, `alias` (as atom) of the relationship you want to add and an `option` as
+  of relation type (as Strings) or a map of properties.
   The function can be used along with `MATCH, OPTIONAL MATCH, CREATE, MERGE` clauses.
 
   relationship_from_to() will convert to `(:from_node)-[:rel]->(:to_node)`
@@ -538,9 +564,14 @@ defmodule RedisGraph.Query do
   # "MATCH clause cannot end with a Relationship, add a Node at the end. E.g. new() |> match() |> node(:n) |> relationship_from_to(:r) |> node(:m) |> ..."
   ```
   """
-  @spec relationship_from_to(t(), atom(), map()) :: t()
-  def relationship_from_to(%{error: nil} = context, alias, properties) when is_map(properties) do
-    relationship_from_to(context, alias, "", properties)
+  @spec relationship_from_to(t(), atom(), String.t() | map()) :: t()
+
+  def relationship_from_to(%{error: nil} = context, alias, option) when is_binary(option) do
+    relationship_from_to(context, alias, option, %{})
+  end
+
+  def relationship_from_to(%{error: nil} = context, alias, option) when is_map(option) do
+    relationship_from_to(context, alias, "", option)
   end
 
   @doc """
@@ -621,18 +652,6 @@ defmodule RedisGraph.Query do
     context =
       check_if_match_or_create_or_merge_clause_provided(context, "relationship_from_to()", false)
 
-    # alias_present? = Map.get(context, :relationships, %{}) |> Map.has_key?(alias) or Map.get(context, :nodes, %{}) |> Map.has_key?(alias)
-    # context = if(alias_present?) do
-    #   Map.put(
-    #     context,
-    #     :error,
-    #     "Provided alias: :#{alias} was alreay mentioned before." <>
-    #     " Pass the another alias: e.g. new() |> match() |> node(:n) |> relationship_from_to(:r, \"WORKS\")  |> relationship_from_to(:t, \"KNOWS\") |> order_by_property(:n, \"age\") |> ..."
-    #   )
-    # else
-    #   context
-    # end
-
     error = Map.get(context, :error)
 
     case error do
@@ -709,19 +728,19 @@ defmodule RedisGraph.Query do
   # "MATCH clause cannot end with a Relationship, add a Node at the end. E.g. new() |> match() |> node(:n) |> relationship_from_to(:r) |> node(:m) |> ..."
   ```
   """
-  @spec relationship_to_from(t(), atom(), String.t()) :: t()
-  def relationship_to_from(%{error: nil} = context, alias, type) when is_binary(type) do
-    relationship_to_from(context, alias, type, %{})
+  @spec relationship_to_from(t(), atom(), String.t() | map()) :: t()
+  def relationship_to_from(%{error: nil} = context, alias, option) when is_binary(option) do
+    relationship_to_from(context, alias, option, %{})
   end
 
-  @spec relationship_to_from(t(), atom(), map()) :: t()
-  def relationship_to_from(%{error: nil} = context, alias, properties) when is_map(properties) do
-    relationship_to_from(context, alias, "", properties)
+  def relationship_to_from(%{error: nil} = context, alias, option) when is_map(option) do
+    relationship_to_from(context, alias, "", option)
   end
 
   @doc """
   Add a Relationship to a clause and receive the updated context.
-  Provide the `context`, `alias` (as atom) of the relationship you want to add, a `type` (as Strings) or a map of `properties`.
+  Provide the `context`, `alias` (as atom) of the relationship you want to add and an `option` as
+  of relation type (as Strings) or a map of properties.
   The function can be used along with `MATCH, OPTIONAL MATCH, CREATE, MERGE` clauses.
 
   relationship_to_from() will convert to `(:to_node)<-[:rel]-(:from_node)`
@@ -796,18 +815,6 @@ defmodule RedisGraph.Query do
 
     context =
       check_if_match_or_create_or_merge_clause_provided(context, "relationship_to_from()", false)
-
-    # alias_present? = Map.get(context, :relationships, %{}) |> Map.has_key?(alias) or Map.get(context, :nodes, %{}) |> Map.has_key?(alias)
-    # context = if(alias_present?) do
-    #   Map.put(
-    #     context,
-    #     :error,
-    #     "Provided alias: :#{alias} was alreay mentioned before." <>
-    #     " Pass the another alias: e.g. new() |> match() |> node(:n) |> relationship_to_from(:r, \"WORKS\")  |> relationship_to_from(:t, \"KNOWS\") |> order_by_property(:n, \"age\") |> ..."
-    #   )
-    # else
-    #   context
-    # end
 
     error = Map.get(context, :error)
 
@@ -2971,15 +2978,17 @@ defmodule RedisGraph.Query do
 
         delete_clause_present? = Map.get(context, :used_clauses, []) |> Enum.member?(:delete)
 
+        set_clause_present? = Map.get(context, :used_clauses, []) |> Enum.member?(:set)
+
         inner_context =
-          if (return_clause_present? or return_distinct_clause_present? or delete_clause_present?) and
-               filtered_size_enough? do
+          if (return_clause_present? or return_distinct_clause_present? or delete_clause_present? or
+                set_clause_present?) and filtered_size_enough? do
             context
           else
             Map.put(
               context,
               :error,
-              "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
+              "In case you provide MATCH, OPTIONAL MATCH - then RETURN, RETURN DISCTINCT, SET or DELETE also has to be provided. E.g. new() |> match |> node(:n) |> return(:n)"
             )
           end
 
