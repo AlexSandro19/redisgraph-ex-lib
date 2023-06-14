@@ -1,0 +1,9 @@
+Prerequisites for using the Ex_RedisGraph library
+
+- Have Erlang installed: https://elixir-lang.org/install.html#installing-erlang
+- Have Elixir installed: https://elixir-lang.org/install.html
+- Create a test project: https://elixir-lang.org/getting-started/mix-otp/introduction-to-mix.html#our-first-project
+- Add the library as dependencies: 
+- Get dependencies by writing: "mix deps.get" in the terminal while being in the root of the project
+- Start interactive shell from the teraminal: "iex -S mix" while being root of the project
+- Check how to use the library and follow an example from Documentation: https://hexdocs.pm/ex_redisgraph/RedisGraph.

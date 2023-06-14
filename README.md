@@ -10,6 +10,8 @@ Library is publishd to [Hex](https://hex.pm/packages/ex_redisgraph).
 
 Documentation for the library can be found [here](https://hexdocs.pm/ex_redisgraph/RedisGraph.html).
 
+**Note:** if you are new to Elixir, please follow the **Prerequisites.txt** file located in the root of the project.
+
 ## Installation
 Add the `:ex_redisgraph` dependency to your `mix.exs` file. 
 ```elixir
